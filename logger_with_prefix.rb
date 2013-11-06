@@ -19,9 +19,9 @@ module CloudGatewaySupport
 
     private
 
-      def log_with_prefix(level, msg)
-        @raw_logger.__send__(level, "#{prefix}: #{msg}")
-      end
+    def log_with_prefix(level, msg)
+      @raw_logger.__send__(level, "#{prefix}: #{msg}")
+    end
   end
 
 end
