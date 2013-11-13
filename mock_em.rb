@@ -1,8 +1,11 @@
 require 'logger'
 require 'cloud_gateway_support/logger_with_prefix'
+require 'timecop'
 
 module CloudGatewaySupport
+
   # Fake EM suitable for unit testing
+  # Uses Timecop as it accelerates time.
   class MockEM
 
     TICK_MILLIS_STEP = 100
@@ -14,7 +17,7 @@ module CloudGatewaySupport
       @scheduled_tasks = ScheduledTasks.new(@log)
       @timer_objects = []
       @is_stopped = false
-      @clock_millis = 0
+      set_clock(0)
       @shutdown_hooks = []
 
       @max_timer_count = 100000  #TODO: not honored
@@ -31,7 +34,7 @@ module CloudGatewaySupport
       @tick_count = 0
       while (!@is_stopped)
         @tick_count += 1
-        @clock_millis += TICK_MILLIS_STEP
+        set_clock(@clock_millis + TICK_MILLIS_STEP)
         @log.info "Preparing tick ##{@tick_count}, clock=#{@clock_millis}"
 
         this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis) + @next_tick_procs
@@ -45,7 +48,7 @@ module CloudGatewaySupport
             break
           else
             @log.info "Nothing in this tick. Accelerating clock to: #{next_time}"
-            @clock_millis = next_time
+            set_clock(next_time)
             this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis)
           end
         end
@@ -81,6 +84,8 @@ module CloudGatewaySupport
       @next_tick_procs << proc
     end
 
+    #TODO: don't use reuse_timer, factor it out to a private method
+    #TODO: add support for proc & block, just like next_tick
     def add_timer(time_seconds, reuse_timer=nil, &block)
       timer = reuse_timer || MockTimer.new
       @log.info "Adding timer task: id=#{timer.id}, time_seconds=#{time_seconds}"
@@ -88,13 +93,14 @@ module CloudGatewaySupport
         if timer.is_cancelled
           @log.info "Skipping this timer task, it's already cancelled"
         else
-          block.call
+          safely_run { block.call }
         end
       end
       @timer_objects << timer
       timer
     end
 
+    #TODO: add support for proc & block, just like next_tick
     def add_periodic_timer(period_seconds, &block)
       timer = MockTimer.new
       @log.info "Creating periodic timer task: id=#{timer.id}, period_seconds=#{period_seconds}"
@@ -104,7 +110,7 @@ module CloudGatewaySupport
         if timer.is_cancelled
           @log.info "Skipping timer task id=#{timer.id}, it's already cancelled"
         else
-          block.call
+          safely_run { block.call }
         end
         if !timer.is_cancelled
           @log.info "Rescheduling next run of periodic timer id=#{timer.id}"
@@ -200,6 +206,11 @@ module CloudGatewaySupport
         @error_handler.call(e) if @error_handler
         raise e
       end
+    end
+
+    def set_clock(millis)
+      @clock_millis = millis
+      Timecop.freeze(millis)
     end
 
   end
