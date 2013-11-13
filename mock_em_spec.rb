@@ -10,7 +10,7 @@ describe CloudGatewaySupport::MockEM do
         @em = use_real_em ? EM : CloudGatewaySupport::MockEM.new(@logger)
       end
 
-      it "should run and stop" do
+      it "#run and #stop" do
         inside_run = false
         after_stop = false
         @em.run do
@@ -22,7 +22,7 @@ describe CloudGatewaySupport::MockEM do
         after_stop.should == true
       end
 
-      it "should support next_tick" do
+      it "#next_tick" do
         after_stop = false
         @em.run do
           @em.next_tick do
@@ -33,7 +33,7 @@ describe CloudGatewaySupport::MockEM do
         after_stop.should == true
       end
 
-      it "should support add_timer" do
+      it "#add_timer" do
         counter = 0
         @em.run do
           @em.add_timer(1) do
@@ -49,7 +49,7 @@ describe CloudGatewaySupport::MockEM do
         counter.should == 2
       end
 
-      it "should_support cancel_timer" do
+      it "#cancel_timer" do
         @em.run do
           timer = @em.add_timer(1) do
             fail
@@ -63,7 +63,7 @@ describe CloudGatewaySupport::MockEM do
         end
       end
 
-      it "should support add_periodic_timer" do
+      it "#add_periodic_timer" do
         @em.run do
           count = 0
           @em.add_periodic_timer(1) do
@@ -75,7 +75,7 @@ describe CloudGatewaySupport::MockEM do
         end
       end
 
-      it "should support cancelling periodic_timer" do
+      it "cancelling periodic_timer" do
         @em.run do
           count = 0
           timer = nil
@@ -91,6 +91,26 @@ describe CloudGatewaySupport::MockEM do
             count.should == 3
           end
         end
+      end
+
+      it "#is_reactor_running?" do
+        @em.reactor_running?.should == false
+        @em.run do
+          @em.reactor_running?.should == true
+          @em.stop
+          @em.reactor_running?.should == true
+        end
+        @em.reactor_running?.should == false
+      end
+
+      it "#add_shutdown_hook" do
+        sequence = []
+        @em.run do
+          @em.add_shutdown_hook { sequence.push(1) }
+          @em.add_shutdown_hook { sequence.push(2) }
+          @em.stop
+        end
+        sequence.should == [2,1]
       end
 
     end
