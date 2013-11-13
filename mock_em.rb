@@ -8,10 +8,10 @@ module CloudGatewaySupport
     TICK_MILLIS_STEP = 100
 
     def initialize(logger)
-      @logger = LoggerWithPrefix.new("MockEM", logger)
+      @log = LoggerWithPrefix.new("MockEM", logger)
 
       @next_tick_procs = []
-      @scheduled_tasks = ScheduledTasks.new(@logger)
+      @scheduled_tasks = ScheduledTasks.new(@log)
       @timer_objects = []
       @is_stopped = false
       @clock_millis = 0
@@ -23,15 +23,16 @@ module CloudGatewaySupport
     def run(&block)
       @reactor_running = true
       @is_stopped = false
-      @logger.info "run called. executing run block."
-      block.call
+      @log.info "run called. executing run block."
 
-      @logger.info("Beginning tick loop.")
+      safely_run { block.call }
+
+      @log.info("Beginning tick loop.")
       @tick_count = 0
       while (!@is_stopped)
         @tick_count += 1
         @clock_millis += TICK_MILLIS_STEP
-        @logger.info "Preparing tick ##{@tick_count}, clock=#{@clock_millis}"
+        @log.info "Preparing tick ##{@tick_count}, clock=#{@clock_millis}"
 
         this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis) + @next_tick_procs
         @next_tick_procs = []
@@ -40,52 +41,52 @@ module CloudGatewaySupport
           # accelerate time to next scheduled task
           next_time = @scheduled_tasks.time_of_next_task
           if next_time.nil?
-            @logger.info "Nothing left to do! Returning."
+            @log.info "Nothing left to do! Returning."
             break
           else
-            @logger.info "Nothing in this tick. Accelerating clock to: #{next_time}"
+            @log.info "Nothing in this tick. Accelerating clock to: #{next_time}"
             @clock_millis = next_time
             this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis)
           end
         end
 
-        @logger.info "Tick=#{@tick_count}, clock=#{@clock_millis} ms"
+        @log.info "Tick=#{@tick_count}, clock=#{@clock_millis} ms"
         this_tick_procs.each_with_index do |proc, index|
-          @logger.info "Executing tick proc ##{index+1}"
-          proc.call
+          @log.info "Executing tick proc ##{index+1}"
+          safely_run { proc.call }
         end
       end
-      @logger.info("Finished tick loop. Returning.")
+      @log.info("Finished tick loop. Returning.")
     ensure
       @reactor_running = false
     end
 
     def stop
-      @logger.info "stop called"
+      @log.info "stop called"
       @is_stopped = true
       @next_tick_procs = []
-      @scheduled_tasks = ScheduledTasks.new(@logger)
+      @scheduled_tasks.clear_and_reset
       hooks = @shutdown_hooks
       @shutdown_hooks = []
 
       if hooks.count > 0
-        @logger.info "Executing #{hooks.count} shutdown hooks"
+        @log.info "Executing #{hooks.count} shutdown hooks"
         hooks.reverse.each(&:call)
       end
     end
 
     def next_tick(proc = nil, &block)
       proc ||= block
-      @logger.info "Adding proc to next_tick"
+      @log.info "Adding proc to next_tick"
       @next_tick_procs << proc
     end
 
     def add_timer(time_seconds, reuse_timer=nil, &block)
       timer = reuse_timer || MockTimer.new
-      @logger.info "Adding timer task: id=#{timer.id}, time_seconds=#{time_seconds}"
+      @log.info "Adding timer task: id=#{timer.id}, time_seconds=#{time_seconds}"
       @scheduled_tasks.add_task(@clock_millis + (time_seconds * 1000)) do
         if timer.is_cancelled
-          @logger.info "Skipping this timer task, it's already cancelled"
+          @log.info "Skipping this timer task, it's already cancelled"
         else
           block.call
         end
@@ -96,17 +97,17 @@ module CloudGatewaySupport
 
     def add_periodic_timer(period_seconds, &block)
       timer = MockTimer.new
-      @logger.info "Creating periodic timer task: id=#{timer.id}, period_seconds=#{period_seconds}"
+      @log.info "Creating periodic timer task: id=#{timer.id}, period_seconds=#{period_seconds}"
 
       recursive_block = nil
       recursive_block = lambda do
         if timer.is_cancelled
-          @logger.info "Skipping timer task id=#{timer.id}, it's already cancelled"
+          @log.info "Skipping timer task id=#{timer.id}, it's already cancelled"
         else
           block.call
         end
         if !timer.is_cancelled
-          @logger.info "Rescheduling next run of periodic timer id=#{timer.id}"
+          @log.info "Rescheduling next run of periodic timer id=#{timer.id}"
           add_timer(period_seconds, timer, &recursive_block)
         end
       end
@@ -132,6 +133,13 @@ module CloudGatewaySupport
       @shutdown_hooks << block
     end
 
+    def error_handler(proc = nil, &block)
+      proc ||= block
+      @log.info("")
+      @error_handler = proc
+    end
+
+    # Simulates whatever EM.add_timer or EM.add_periodic_timer returns.
     class MockTimer
 
       @@id_seq = 0
@@ -148,12 +156,14 @@ module CloudGatewaySupport
       end
     end
 
+
+    # Keeps track of tasks to execute in the future, each one consisting of a timestamp and proc to execute.
     class ScheduledTasks
       ScheduledTask = Struct.new(:timestamp, :proc)
 
-      def initialize(logger)
-        @logger = logger
-        @tasks = []
+      def initialize(log)
+        @log = log
+        clear_and_reset
       end
 
       def add_task(timestamp_millis, &block)
@@ -164,7 +174,7 @@ module CloudGatewaySupport
       def pop_due_tasks(timestamp)
         due_tasks = @tasks.take_while {|t| t.timestamp <= timestamp }
         @tasks = @tasks - due_tasks
-        @logger.info("Popped #{due_tasks.count} due tasks. Clock=#{timestamp}, due_times=#{due_tasks.map(&:timestamp).inspect}")
+        @log.info("Popped #{due_tasks.count} due tasks. Clock=#{timestamp}, due_times=#{due_tasks.map(&:timestamp).inspect}")
         due_tasks.map(&:proc)
       end
 
@@ -172,6 +182,25 @@ module CloudGatewaySupport
         task = @tasks.first
         task && task.timestamp
       end
+
+      def clear_and_reset
+        @tasks = []
+      end
     end
+
+
+    private
+
+    def safely_run(&block)
+      begin
+        block.call
+      rescue => e
+        @error_handler.call(e) if @error_handler
+      rescue Exception => e
+        @error_handler.call(e) if @error_handler
+        raise e
+      end
+    end
+
   end
 end
