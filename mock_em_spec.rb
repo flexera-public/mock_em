@@ -22,13 +22,25 @@ describe CloudGatewaySupport::MockEM do
         after_stop.should == true
       end
 
-      it "#next_tick" do
+      it "#next_tick &block" do
         after_stop = false
         @em.run do
           @em.next_tick do
             @em.stop
             after_stop = true
           end
+        end
+        after_stop.should == true
+      end
+
+      it "#next_tick proc" do
+        after_stop = false
+        proc = proc {
+          @em.stop
+          after_stop = true
+        }
+        @em.run do
+          @em.next_tick(proc)
         end
         after_stop.should == true
       end
@@ -111,6 +123,10 @@ describe CloudGatewaySupport::MockEM do
           @em.stop
         end
         sequence.should == [2,1]
+      end
+
+      it "#get_max_timer_count" do
+        @em.get_max_timer_count.should == 100000
       end
 
     end
