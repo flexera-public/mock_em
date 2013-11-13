@@ -1,4 +1,5 @@
 require 'logger'
+require 'cloud_gateway_support/logger_with_prefix'
 
 module CloudGatewaySupport
   # Fake EM suitable for unit testing
@@ -7,7 +8,7 @@ module CloudGatewaySupport
     TICK_MILLIS_STEP = 100
 
     def initialize(logger)
-      @logger = logger
+      @logger = LoggerWithPrefix.new("MockEM", logger)
 
       @next_tick_procs = []
       @scheduled_tasks = ScheduledTasks.new(@logger)
