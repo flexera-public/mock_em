@@ -129,6 +129,28 @@ describe CloudGatewaySupport::MockEM do
         @em.get_max_timer_count.should == 100000
       end
 
+      it "#error_handler" do
+        error_count = 0
+        @em.error_handler do |error|
+          @logger.info "Caught error: #{error.inspect}"
+          error.message.should =~ /fake_error/
+          error_count += 1
+        end
+
+        @em.run do
+          @em.next_tick do
+            @em.next_tick do
+              @em.stop
+            end
+            raise "fake_error_2"
+          end
+          raise "fake_error_1"
+        end
+
+        error_count.should == 2
+      end
+
+
     end
   end
 
