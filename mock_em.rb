@@ -15,9 +15,11 @@ module CloudGatewaySupport
       @timer_objects = []
       @is_stopped = false
       @clock_millis = 0
+      @shutdown_hooks = []
     end
 
     def run(&block)
+      @reactor_running = true
       @is_stopped = false
       @logger.info "run called. executing run block."
       block.call
@@ -52,6 +54,8 @@ module CloudGatewaySupport
         end
       end
       @logger.info("Finished tick loop. Returning.")
+    ensure
+      @reactor_running = false
     end
 
     def stop
@@ -59,6 +63,13 @@ module CloudGatewaySupport
       @is_stopped = true
       @next_tick_procs = []
       @scheduled_tasks = ScheduledTasks.new(@logger)
+      hooks = @shutdown_hooks
+      @shutdown_hooks = []
+
+      if hooks.count > 0
+        @logger.info "Executing #{hooks.count} shutdown hooks"
+        hooks.reverse.each(&:call)
+      end
     end
 
     def next_tick(&block)
@@ -106,6 +117,13 @@ module CloudGatewaySupport
       timer.cancel
     end
 
+    def reactor_running?
+      !!(@reactor_running)
+    end
+
+    def add_shutdown_hook(&block)
+      @shutdown_hooks << block
+    end
 
     class MockTimer
 
