@@ -16,6 +16,8 @@ module CloudGatewaySupport
       @is_stopped = false
       @clock_millis = 0
       @shutdown_hooks = []
+
+      @max_timer_count = 100000  #TODO: not honored
     end
 
     def run(&block)
@@ -72,9 +74,10 @@ module CloudGatewaySupport
       end
     end
 
-    def next_tick(&block)
+    def next_tick(proc = nil, &block)
+      proc ||= block
       @logger.info "Adding proc to next_tick"
-      @next_tick_procs << block
+      @next_tick_procs << proc
     end
 
     def add_timer(time_seconds, reuse_timer=nil, &block)
@@ -119,6 +122,10 @@ module CloudGatewaySupport
 
     def reactor_running?
       !!(@reactor_running)
+    end
+
+    def get_max_timer_count
+      @max_timer_count
     end
 
     def add_shutdown_hook(&block)
