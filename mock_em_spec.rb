@@ -7,7 +7,10 @@ describe CloudGatewaySupport::MockEM do
     context "using #{use_real_em ? 'real' : 'fake'} em" do
       before(:each) do
         @logger = Logger.new(STDOUT)
-        @em = use_real_em ? EM : CloudGatewaySupport::MockEM.new(@logger)
+        @em = use_real_em ? EM : CloudGatewaySupport::MockEM.new(@logger, Timecop)
+      end
+      after(:each) do
+        Timecop.return
       end
 
       it "#run and #stop" do
