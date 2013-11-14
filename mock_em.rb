@@ -4,21 +4,20 @@ require 'timecop'
 
 module CloudGatewaySupport
 
-  # Fake EM suitable for unit testing
-  # Uses Timecop as it accelerates time.
+  # Fake EM suitable for unit testing.
+  # Uses Timecop to accelerate time. Should run Timecop.return after spec, just to be safe.
   class MockEM
 
-    TICK_MILLIS_STEP = 100
-
-    def initialize(logger)
+    # @param [Timecop] timecop
+    def initialize(logger, timecop)
       @log = LoggerWithPrefix.new("MockEM", logger)
+      @timecop = timecop
 
       @next_tick_procs = []
       @scheduled_tasks = ScheduledTasks.new(@log)
-      @timer_objects = []
-      @is_stopped = false
-      set_clock(0)
-      @shutdown_hooks = []
+      @timer_objects   = []
+      @shutdown_hooks  = []
+      @is_stopped      = false
 
       @max_timer_count = 100000  #TODO: not honored
     end
@@ -34,10 +33,9 @@ module CloudGatewaySupport
       @tick_count = 0
       while (!@is_stopped)
         @tick_count += 1
-        set_clock(@clock_millis + TICK_MILLIS_STEP)
-        @log.info "Preparing tick ##{@tick_count}, clock=#{@clock_millis}"
+        @log.info "Preparing tick ##{@tick_count}, clock=#{now_millis}"
 
-        this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis) + @next_tick_procs
+        this_tick_procs = @scheduled_tasks.pop_due_tasks(now_millis) + @next_tick_procs
         @next_tick_procs = []
 
         if this_tick_procs.empty?
@@ -49,11 +47,11 @@ module CloudGatewaySupport
           else
             @log.info "Nothing in this tick. Accelerating clock to: #{next_time}"
             set_clock(next_time)
-            this_tick_procs = @scheduled_tasks.pop_due_tasks(@clock_millis)
+            this_tick_procs = @scheduled_tasks.pop_due_tasks(now_millis)
           end
         end
 
-        @log.info "Tick=#{@tick_count}, clock=#{@clock_millis} ms"
+        @log.info "Tick=#{@tick_count}, clock=#{now_millis} ms"
         this_tick_procs.each_with_index do |proc, index|
           @log.info "Executing tick proc ##{index+1}"
           safely_run { proc.call }
@@ -62,6 +60,9 @@ module CloudGatewaySupport
       @log.info("Finished tick loop. Returning.")
     ensure
       @reactor_running = false
+      future_time = now_millis
+      @timecop.return
+      @log.debug "MockEM saved you #{(future_time - now_millis) / 1000} seconds."
     end
 
     def stop
@@ -89,7 +90,7 @@ module CloudGatewaySupport
     def add_timer(time_seconds, reuse_timer=nil, &block)
       timer = reuse_timer || MockTimer.new
       @log.info "Adding timer task: id=#{timer.id}, time_seconds=#{time_seconds}"
-      @scheduled_tasks.add_task(@clock_millis + (time_seconds * 1000)) do
+      @scheduled_tasks.add_task(now_millis + (time_seconds * 1000)) do
         if timer.is_cancelled
           @log.info "Skipping this timer task, it's already cancelled"
         else
@@ -209,8 +210,11 @@ module CloudGatewaySupport
     end
 
     def set_clock(millis)
-      @clock_millis = millis
-      Timecop.freeze(millis)
+      @timecop.travel(Time.at(millis / 1000.0))
+    end
+
+    def now_millis
+      (Time.now.utc.to_f * 1000.0).to_i
     end
 
   end
