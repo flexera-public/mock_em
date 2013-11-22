@@ -3,8 +3,11 @@ require 'cloud_gateway_support/mock_em'
 
 describe CloudGatewaySupport::MockEM do
 
+  # Runs all of these specs on both real EM and MockEM,
+  # so we can immediately notice if their behavior is not identical.
   [true, false].each do |use_real_em|
     context "using #{use_real_em ? 'real' : 'fake'} em" do
+
       before(:each) do
         @logger = Logger.new(STDOUT)
         @em = use_real_em ? EM : CloudGatewaySupport::MockEM.new(@logger, Timecop)
@@ -48,13 +51,13 @@ describe CloudGatewaySupport::MockEM do
         after_stop.should == true
       end
 
-      it "#add_timer" do
+      it "#add_timer &block" do
         counter = 0
         @em.run do
-          @em.add_timer(1) do
+          @em.add_timer(0.1) do
             counter.should == 0
             counter += 1
-            @em.add_timer(1) do
+            @em.add_timer(0.1) do
               counter.should == 1
               @em.stop
               counter +=1
@@ -64,44 +67,79 @@ describe CloudGatewaySupport::MockEM do
         counter.should == 2
       end
 
+      it "#add_timer proc" do
+        counter = 0
+        @em.run do
+          proc1 = proc do
+            counter.should == 0
+            counter += 1
+            proc2 = proc do
+              counter.should == 1
+              @em.stop
+              counter +=1
+            end
+            @em.add_timer(0.1, proc2)
+          end
+          @em.add_timer(0.1, proc1)
+        end
+        counter.should == 2
+      end
+
       it "#cancel_timer" do
         @em.run do
-          timer = @em.add_timer(1) do
+          timer = @em.add_timer(0.1) do
             fail
           end
 
           @em.cancel_timer(timer)
 
-          @em.add_timer(2) do
+          @em.add_timer(0.3) do
             @em.stop
           end
         end
       end
 
-      it "#add_periodic_timer" do
+      it "#add_periodic_timer &block" do
+        count = 0
         @em.run do
-          count = 0
-          @em.add_periodic_timer(1) do
+          @em.add_periodic_timer(0.1) do
             count += 1
             if count > 5
               @em.stop
             end
           end
         end
+        count.should == 6
+      end
+
+      it "#add_periodic_timer proc" do
+        count = 0
+        @em.run do
+          proc1 = proc do
+            count += 1
+            if count > 5
+              @em.stop
+            end
+          end
+          @logger.info "adding timer"
+
+          @em.add_periodic_timer(0.1, proc1)
+        end
+        count.should == 6
       end
 
       it "cancelling periodic_timer" do
         @em.run do
           count = 0
           timer = nil
-          timer = @em.add_periodic_timer(1) do
+          timer = @em.add_periodic_timer(0.1) do
             count += 1
             if count >= 3
               @em.cancel_timer(timer)
             end
           end
 
-          @em.add_timer(5) do
+          @em.add_timer(0.5) do
             @em.stop
             count.should == 3
           end
