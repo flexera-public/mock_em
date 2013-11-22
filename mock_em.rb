@@ -33,9 +33,10 @@ module CloudGatewaySupport
       @tick_count = 0
       while (!@is_stopped)
         @tick_count += 1
-        @log.info "Preparing tick ##{@tick_count}, clock=#{now_millis}"
 
-        this_tick_procs = @scheduled_tasks.pop_due_tasks(now_millis) + @next_tick_procs
+        due_tasks = @scheduled_tasks.pop_due_tasks(now_millis)
+        @log.info "Tick ##{@tick_count}, clock=#{now_millis}, due_tasks=#{due_tasks.count}, next_tick_procs=#{@next_tick_procs.count}"
+        this_tick_procs = due_tasks + @next_tick_procs
         @next_tick_procs = []
 
         if this_tick_procs.empty?
@@ -45,13 +46,12 @@ module CloudGatewaySupport
             @log.info "Nothing left to do! Returning."
             break
           else
-            @log.info "Nothing in this tick. Accelerating clock to: #{next_time}"
+            delta = next_time - now_millis
+            @log.info "Nothing in this tick. Accelerating clock by #{delta / 1000.0}s to: #{next_time}"
             set_clock(next_time)
-            this_tick_procs = @scheduled_tasks.pop_due_tasks(now_millis)
           end
         end
 
-        @log.info "Tick=#{@tick_count}, clock=#{now_millis} ms"
         this_tick_procs.each_with_index do |proc, index|
           @log.info "Executing tick proc ##{index+1}"
           safely_run { proc.call }
@@ -85,41 +85,25 @@ module CloudGatewaySupport
       @next_tick_procs << proc
     end
 
-    #TODO: don't use reuse_timer, factor it out to a private method
-    #TODO: add support for proc & block, just like next_tick
-    def add_timer(time_seconds, reuse_timer=nil, &block)
-      timer = reuse_timer || MockTimer.new
-      @log.info "Adding timer task: id=#{timer.id}, time_seconds=#{time_seconds}"
-      @scheduled_tasks.add_task(now_millis + (time_seconds * 1000)) do
-        if timer.is_cancelled
-          @log.info "Skipping this timer task, it's already cancelled"
-        else
-          safely_run { block.call }
-        end
-      end
-      @timer_objects << timer
-      timer
+    def add_timer(delay_seconds, proc = nil, &block)
+      add_timer_internal(delay_seconds, nil, proc, &block)
     end
 
-    #TODO: add support for proc & block, just like next_tick
-    def add_periodic_timer(period_seconds, &block)
+    def add_periodic_timer(period_seconds, proc = nil, &block)
+      proc ||= block
       timer = MockTimer.new
       @log.info "Creating periodic timer task: id=#{timer.id}, period_seconds=#{period_seconds}"
 
       recursive_block = nil
       recursive_block = lambda do
-        if timer.is_cancelled
-          @log.info "Skipping timer task id=#{timer.id}, it's already cancelled"
-        else
-          safely_run { block.call }
-        end
+        safely_run { proc.call }
         if !timer.is_cancelled
           @log.info "Rescheduling next run of periodic timer id=#{timer.id}"
-          add_timer(period_seconds, timer, &recursive_block)
+          add_timer_internal(period_seconds, timer, recursive_block)
         end
       end
 
-      add_timer(period_seconds, timer, &recursive_block)
+      add_timer_internal(period_seconds, timer, recursive_block)
     end
 
     def cancel_timer(timer)
@@ -142,9 +126,10 @@ module CloudGatewaySupport
 
     def error_handler(proc = nil, &block)
       proc ||= block
-      @log.info("")
+      @log.info("Setting error_handler")
       @error_handler = proc
     end
+
 
     # Simulates whatever EM.add_timer or EM.add_periodic_timer returns.
     class MockTimer
@@ -181,7 +166,6 @@ module CloudGatewaySupport
       def pop_due_tasks(timestamp)
         due_tasks = @tasks.take_while {|t| t.timestamp <= timestamp }
         @tasks = @tasks - due_tasks
-        @log.info("Popped #{due_tasks.count} due tasks. Clock=#{timestamp}, due_times=#{due_tasks.map(&:timestamp).inspect}")
         due_tasks.map(&:proc)
       end
 
@@ -215,6 +199,22 @@ module CloudGatewaySupport
 
     def now_millis
       (Time.now.utc.to_f * 1000.0).to_i
+    end
+
+    # same as add_timer, but adds an optional parameter: reuse_timer
+    def add_timer_internal(delay_seconds, reuse_timer, proc = nil, &block)
+      proc ||= block
+      timer = reuse_timer || MockTimer.new
+      @log.info "Adding timer task: id=#{timer.id}, delay_seconds=#{delay_seconds}"
+      @scheduled_tasks.add_task(now_millis + (delay_seconds * 1000)) do
+        if timer.is_cancelled
+          @log.debug "Skipping this timer task, it's already cancelled"
+        else
+          safely_run { proc.call }
+        end
+      end
+      @timer_objects << timer
+      timer
     end
 
   end
