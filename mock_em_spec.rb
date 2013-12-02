@@ -191,8 +191,18 @@ describe CloudGatewaySupport::MockEM do
         error_count.should == 2
       end
 
+      it "#error_handler not defined, should re-raise error" do
+        lambda do
+          @em.run do
+            @em.next_tick do
+              @em.next_tick do
+                raise "error"
+              end
+            end
+          end
+        end.should raise_error
+      end
 
     end
   end
-
 end
