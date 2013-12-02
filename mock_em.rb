@@ -186,7 +186,11 @@ module CloudGatewaySupport
       begin
         block.call
       rescue => e
-        @error_handler.call(e) if @error_handler
+        if @error_handler
+          @error_handler.call(e)
+        else
+          raise e
+        end
       rescue Exception => e
         @error_handler.call(e) if @error_handler
         raise e
