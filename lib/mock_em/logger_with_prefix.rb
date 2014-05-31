@@ -1,4 +1,4 @@
-module CloudGatewaySupport
+module MockEM
 
   # Logs all messages with the specified prefix.
   # Warning: this is a not a full-fledged Logger implementation, it just logs string messages.

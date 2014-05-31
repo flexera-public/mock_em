@@ -1,8 +1,8 @@
 require 'logger'
-require 'cloud_gateway_support/logger_with_prefix'
+require 'mock_em/logger_with_prefix'
 require 'timecop'
 
-module CloudGatewaySupport
+module MockEM
 
   # Fake EM suitable for unit testing.
   # Uses Timecop to accelerate time. Should run Timecop.return after spec, just to be safe.

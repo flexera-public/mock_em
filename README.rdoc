@@ -1,0 +1,6 @@
+= mock_em
+
+Gem for mocking out EM for tests.
+
+Maintained by the RightScale "Cornsilk_team"
+
