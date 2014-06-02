@@ -1,7 +1,7 @@
 require 'spec/spec_helper'
-require 'cloud_gateway_support/mock_em'
+require 'mock_em/mock_em'
 
-describe CloudGatewaySupport::MockEM do
+describe MockEM::MockEM do
 
   # Runs all of these specs on both real EM and MockEM,
   # so we can immediately notice if their behavior is not identical.
@@ -10,7 +10,7 @@ describe CloudGatewaySupport::MockEM do
 
       before(:each) do
         @logger = Logger.new(STDOUT)
-        @em = use_real_em ? EM : CloudGatewaySupport::MockEM.new(@logger, Timecop)
+        @em = use_real_em ? EM : MockEM::MockEM.new(@logger, Timecop)
       end
       after(:each) do
         Timecop.return
