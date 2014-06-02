@@ -1,5 +1,6 @@
 require 'spec/spec_helper'
 require 'mock_em/mock_em'
+require 'eventmachine'
 
 describe MockEM::MockEM do
 
