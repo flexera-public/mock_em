@@ -10,34 +10,38 @@ You'll need to add `require 'mock_em'`, as well as `require 'timecop'`.
 
 At the beginning of your spec you can use the following snippet to mock EM within the scope of that spec.
 
-    # mock & restore EM
-    before(:all) do
-      @logger = Logger.new(STDOUT)  # <-- Choose your own logger, as appropriate
-        
-      # Mock EM
-      @orig_EM = EM
-      EM = MockEM::MockEM.new(@logger, Timecop)
-    end
-    after(:all) do
-      EM = @orig_EM
-      Timecop.return
-    end
+```ruby
+# mock & restore EM
+before(:all) do
+  @logger = Logger.new(STDOUT)  # <-- Choose your own logger, as appropriate
+    
+  # Mock EM
+  @orig_EM = EM
+  EM = MockEM::MockEM.new(@logger, Timecop)
+end
+after(:all) do
+  EM = @orig_EM
+  Timecop.return
+end
+```
 
 Any references to `EM` will then be using MockEM.
 
 As a quick demonstration, the following code has a timer that would wait for 8 minutes with EM, but with MockEM it completes instantaneously:
  
-    require 'timecop'
-    require 'mock_em'
-    logger = Logger.new(STDOUT)
-    em = MockEM::MockEM.new(logger, Timecop)
-    
-    em.run do
-      em.add_timer(8 * 60) do
-        puts "Done!"
-        em.stop
-      end
-    end    
+```ruby
+require 'timecop'
+require 'mock_em'
+logger = Logger.new(STDOUT)
+em = MockEM::MockEM.new(logger, Timecop)
+
+em.run do
+  em.add_timer(8 * 60) do
+    puts "Done!"
+    em.stop
+  end
+end    
+```
 
 ## Supported Features
 MockEM supports many of the features of EM. Example of supported methods:
