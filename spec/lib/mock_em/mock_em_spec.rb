@@ -11,6 +11,7 @@ describe MockEM::MockEM do
 
       before(:each) do
         @logger = Logger.new(STDOUT)
+        @logger.level = Logger::WARN
         @em = use_real_em ? EM : MockEM::MockEM.new(@logger, Timecop)
       end
       after(:each) do
@@ -25,8 +26,8 @@ describe MockEM::MockEM do
           @em.stop
           after_stop = true
         end
-        inside_run.should == true
-        after_stop.should == true
+        expect(inside_run).to be true
+        expect(after_stop).to be true
       end
 
       it "#next_tick &block" do
@@ -37,7 +38,7 @@ describe MockEM::MockEM do
             after_stop = true
           end
         end
-        after_stop.should == true
+        expect(after_stop).to be true
       end
 
       it "#next_tick proc" do
@@ -49,33 +50,33 @@ describe MockEM::MockEM do
         @em.run do
           @em.next_tick(proc)
         end
-        after_stop.should == true
+        expect(after_stop).to be true
       end
 
       it "#add_timer &block" do
         counter = 0
         @em.run do
           @em.add_timer(0.1) do
-            counter.should == 0
+            expect(counter).to eq(0)
             counter += 1
             @em.add_timer(0.1) do
-              counter.should == 1
+              expect(counter).to eq(1)
               @em.stop
               counter +=1
             end
           end
         end
-        counter.should == 2
+        expect(counter).to eq(2)
       end
 
       it "#add_timer proc" do
         counter = 0
         @em.run do
           proc1 = proc do
-            counter.should == 0
+            expect(counter).to eq(0)
             counter += 1
             proc2 = proc do
-              counter.should == 1
+              expect(counter).to eq(1)
               @em.stop
               counter +=1
             end
@@ -83,7 +84,7 @@ describe MockEM::MockEM do
           end
           @em.add_timer(0.1, proc1)
         end
-        counter.should == 2
+        expect(counter).to eq(2)
       end
 
       it "#cancel_timer" do
@@ -110,7 +111,7 @@ describe MockEM::MockEM do
             end
           end
         end
-        count.should == 6
+        expect(count).to eq(6)
       end
 
       it "#add_periodic_timer proc" do
@@ -126,7 +127,7 @@ describe MockEM::MockEM do
 
           @em.add_periodic_timer(0.1, proc1)
         end
-        count.should == 6
+        expect(count).to eq(6)
       end
 
       it "cancelling periodic_timer" do
@@ -142,19 +143,19 @@ describe MockEM::MockEM do
 
           @em.add_timer(0.5) do
             @em.stop
-            count.should == 3
+            expect(count).to eq(3)
           end
         end
       end
 
       it "#is_reactor_running?" do
-        @em.reactor_running?.should == false
+        expect(@em.reactor_running?).to be false
         @em.run do
-          @em.reactor_running?.should == true
+          expect(@em.reactor_running?).to be true
           @em.stop
-          @em.reactor_running?.should == true
+          expect(@em.reactor_running?).to be true
         end
-        @em.reactor_running?.should == false
+        expect(@em.reactor_running?).to be false
       end
 
       it "#add_shutdown_hook" do
@@ -164,18 +165,18 @@ describe MockEM::MockEM do
           @em.add_shutdown_hook { sequence.push(2) }
           @em.stop
         end
-        sequence.should == [2,1]
+        expect(sequence).to eq([2,1])
       end
 
       it "#get_max_timer_count" do
-        @em.get_max_timer_count.should == 100000
+        expect(@em.get_max_timer_count).to eq(100000)
       end
 
       it "#error_handler" do
         error_count = 0
         @em.error_handler do |error|
           @logger.info "Caught error: #{error.inspect}"
-          error.message.should =~ /fake_error/
+          expect(error.message).to match(/fake_error/)
           error_count += 1
         end
 
@@ -189,11 +190,11 @@ describe MockEM::MockEM do
           raise "fake_error_1"
         end
 
-        error_count.should == 2
+        expect(error_count).to eq(2)
       end
 
       it "#error_handler not defined, should re-raise error" do
-        lambda do
+        expect do
           @em.run do
             @em.next_tick do
               @em.next_tick do
@@ -201,7 +202,7 @@ describe MockEM::MockEM do
               end
             end
           end
-        end.should raise_error
+        end.to raise_error
       end
 
     end
