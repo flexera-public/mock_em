@@ -69,3 +69,5 @@ If you'd like to add missing functionality, you can use `mock_em_spec.rb` to ver
 
 Maintained by the RightScale "Cornsilk_team"
 
+## License
+MIT License, see [LICENSE](LICENSE)
