@@ -20,7 +20,7 @@ Gem::Specification.new do |gem|
   gem.executables      = gem.files.grep(%r{^bin/}).map{ |f| File.basename(f) }
   gem.test_files       = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths    = [ "lib" ]
-  gem.extra_rdoc_files = [ "LICENSE", "README.rdoc" ]
+  gem.extra_rdoc_files = [ "LICENSE", "README.md" ]
   gem.rubygems_version = "1.8.26"
 
   gem.add_dependency("timecop", "0.3.4")
