@@ -23,7 +23,7 @@ Gem::Specification.new do |gem|
   gem.extra_rdoc_files = [ "LICENSE", "README.md" ]
   gem.rubygems_version = "1.8.26"
 
-  gem.add_dependency("timecop", "0.3.4")
+  gem.add_dependency("timecop", "~> 0.7.1")
   # ---------------------------------------------------------------------
   # Test suite
   # ---------------------------------------------------------------------
