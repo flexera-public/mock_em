@@ -8,7 +8,7 @@ TAGS
 Gemfile.lock
 
 # Rbenv
-.ruby-version
+#.ruby-version
 
 # rcov generated
 coverage
