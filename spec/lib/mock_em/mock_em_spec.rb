@@ -1,4 +1,4 @@
-require 'spec/spec_helper'
+require 'spec_helper'
 require 'mock_em/mock_em'
 require 'eventmachine'
 

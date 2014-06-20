@@ -23,11 +23,11 @@ Gem::Specification.new do |gem|
   gem.extra_rdoc_files = [ "LICENSE", "README.md" ]
   gem.rubygems_version = "1.8.26"
 
-  gem.add_dependency("timecop", "0.3.4")
+  gem.add_dependency("timecop", "0.5.9.2")
   # ---------------------------------------------------------------------
   # Test suite
   # ---------------------------------------------------------------------
+  gem.add_development_dependency("rake",         '~> 10.0')
   gem.add_development_dependency("rspec",        '3.0.0')
-  gem.add_development_dependency('ruby-debug',   '0.10.4')
   gem.add_development_dependency('eventmachine', '1.0.3')
 end
