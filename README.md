@@ -1,7 +1,7 @@
 # MockEM
 [![Gem Version](https://badge.fury.io/rb/mock_em.svg)](http://badge.fury.io/rb/mock_em)
-[![Build Status](https://travis-ci.org/slatteryjim/mock_em.png)](https://travis-ci.org/slatteryjim/mock_em)
-[![Dependency Status](https://gemnasium.com/slatteryjim/mock_em.svg)](https://gemnasium.com/slatteryjim/mock_em)
+[![Build Status](https://travis-ci.org/rightscale/mock_em.png)](https://travis-ci.org/rightscale/mock_em)
+[![Dependency Status](https://gemnasium.com/rightscale/mock_em.svg)](https://gemnasium.com/rightscale/mock_em)
 
 MockEM provides the same interface as [EM](https://github.com/eventmachine/eventmachine/) (a.k.a. [EventMachine](https://github.com/eventmachine/eventmachine/)), but simulates the passage of time to execute your 
 scheduled actions without delay. It is intended for use in tests.
