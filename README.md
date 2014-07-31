@@ -59,9 +59,6 @@ to verify the behavior is identical.
 ## Unsupported Features
 Your mileage may vary.
 
-## TODO
-  - [ ] add Travis CI integration for specs
-
 ## Compatibility
 Ruby 1.8.7 and above is supported.
 
@@ -70,7 +67,12 @@ Pull requests welcome.
 
 If you'd like to add missing functionality, you can use `mock_em_spec.rb` to verify that the behavior is identical in both `MockEM` and `EM`. 
 
+## Contributors
+- [Jim Slattery](https://github.com/jim-slattery-rs)
+- [Dominic Metzger](https://github.com/dominicm)
+
 Maintained by the RightScale "Cornsilk_team"
+
 
 ## License
 MIT License, see [LICENSE](LICENSE)
