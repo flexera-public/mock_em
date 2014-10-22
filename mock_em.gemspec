@@ -30,4 +30,5 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency("rake",         '~> 10.0')
   gem.add_development_dependency("rspec",        '3.0.0')
   gem.add_development_dependency('eventmachine', '1.0.3')
+  gem.add_development_dependency("simplecov",    '0.9.1')
 end
