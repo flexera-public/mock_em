@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version          = MockEM::VERSION
 
   gem.authors          = ['Jim Slattery, Dominic Metzger']
-  gem.date             = "2014-05-30"
+  gem.date             = "2015-10-19"
 
   gem.summary          = %q{Mock for EM for testing.}
   gem.description      = %q{Mock EM}
