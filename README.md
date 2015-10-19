@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/rightscale/mock_em.png)](https://travis-ci.org/rightscale/mock_em)
 [![Dependency Status](https://gemnasium.com/rightscale/mock_em.svg)](https://gemnasium.com/rightscale/mock_em)
 [![Code Climate](https://codeclimate.com/github/rightscale/mock_em/badges/gpa.svg)](https://codeclimate.com/github/rightscale/mock_em)
-[![Test Coverage](https://codeclimate.com/github/rightscale/mock_em/badges/coverage.svg)](https://codeclimate.com/github/rightscale/mock_em)
+[![Coverage Status](https://coveralls.io/repos/rightscale/mock_em/badge.svg?branch=master&service=github)](https://coveralls.io/github/rightscale/mock_em?branch=master)
 
 MockEM provides the same interface as [EM](https://github.com/eventmachine/eventmachine/) (a.k.a. [EventMachine](https://github.com/eventmachine/eventmachine/)), but simulates the passage of time to execute your 
 scheduled actions without delay. It is intended for use in tests.
