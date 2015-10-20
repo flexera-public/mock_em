@@ -8,7 +8,7 @@ Gem::Specification.new do |gem|
   gem.version          = MockEM::VERSION
 
   gem.authors          = ['Jim Slattery, Dominic Metzger']
-  gem.date             = "2014-05-30"
+  gem.date             = "2015-10-19"
 
   gem.summary          = %q{Mock for EM for testing.}
   gem.description      = %q{Mock EM}
@@ -31,4 +31,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency("rspec",        '3.0.0')
   gem.add_development_dependency('eventmachine', '1.0.3')
   gem.add_development_dependency("simplecov",    '0.9.1')
+  gem.add_development_dependency("coveralls")
+  gem.add_development_dependency("mime-types",   '1.25.1')
+  gem.add_development_dependency("rest-client",  '<=1.7.0')
 end
